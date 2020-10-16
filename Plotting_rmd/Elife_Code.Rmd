@@ -542,13 +542,10 @@ PCsum<-summary(PC)
 propVar<-PCsum$importance[2,]
 LEN<-nrow(inMat)
 
-D<-dist(t(inMat[,9:43]))
+D<-poppr::reynolds.dist(t(inMat[,9:43]))
 scaleD<-cmdscale(D)
 
-Dpop<-dist(t(inMat))
-
 DRPosData<-data.frame(inMat,scores=PC$x[,1:4])
-
 
 #Principal components
 PCscore<-ggplot(DRPosData, lwd =1.5)+theme_pubr()+
