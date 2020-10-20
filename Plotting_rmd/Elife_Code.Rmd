@@ -1,12 +1,15 @@
 ---
-title: "Analysis of MFE"
+title: 'Dolan and Taguwa, et al. R plotting and analysis Scripts '
 author: "Patrick T. Dolan, Ph.D."
-date: "3/12/2018"
-output: pdf_document
+date: ''
+output:
+  html_document:
+    df_print: paged
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/GitHub/Dolan_Taguwa_2020/")
+#knitr::opts_knit$set(root.dir = "~/GitHub/Dolan_Taguwa_2020/")
+
 library(RColorBrewer)
 library(data.table)
 library(viridis)
@@ -14,6 +17,9 @@ library(limma)
 library(ggplot2)
 library(reshape2)
 library(ggpubr)
+library(Hmisc)
+library(Biostrings)
+
 #import from R_useful on GitHub
 source("https://raw.githubusercontent.com/ptdolan/Rutile/master/R_useful.R")#pair plot
 
@@ -23,15 +29,17 @@ regE<-  c(96,     438, 711,936,2421,3477, 4131,  4521,  6375,  6756, 6825,  7569
 
 ```
 
+Load data for plotting. 
 ```{r loadData}
-load("Data_Tables/fitnesstable_All.Rdata")
+load("../Data_Tables/fitnesstable_All.Rdata")
 
 Wtable[,meanF_HS:=mean(freq),by=c("host","set","ID")]#average frequency of alleles across each lineage
 
-load("~/Google_Drive/DengueDataAndAnalysis/Indels_wrel_v2.RData")
+#load("Indels_wrel_v2.RData")
 ```
 
 Define color palettes.
+
 ```{r colors}
 library(RColorBrewer)
 MT.colors<- brewer.pal(name = "Dark2",8)[c(2,1,8)] #NonSyn,Syn,UTR
@@ -52,6 +60,7 @@ BB<-colorRampPalette( c(status.colors[4],status.colors[4]))(6)
 MLHmat<-append(LD,append(DN,append(NB,BB)))
 ```
 
+M and L denote two QC values used to determine confidence in each estimate. M and L denote the number of populations that have coverage sufficient to observe the mutation (based on mutation rate) (L) and and the relative frequency of the mutation relative to depth (M).
 
 ```{r define confidence thresholds}
 Wtable[M>=8 | L>=7,HC:="HC"]
@@ -62,8 +71,9 @@ WTall<-Wtable
 HCtable<-Wtable[HC=="HC",]
 ```
 
+Plot DMFE, coloring by various characteristics. 
 ```{r DMFE_all}
-dir.create("./DMFE")
+dir.create("../DMFE")
 WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])
 WtableLim[wrel>2,wrel:=2,]#stack at 2.0
 W<-ggplot(WtableLim)+theme_pubr()
@@ -94,15 +104,15 @@ Wrel_Coverage<-W+
   guides(fill=guide_legend(title="log10(frequency)"))+
   scale_fill_brewer(palette = "YlGnBu",direction = 1)
 
-ggsave(useDingbats=F,plot = Wrel_Status,filename = "DMFE/all_histogram_status.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage,filename = "DMFE/all_histogram_coverage.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "DMFE/all_histogram_fill.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "DMFE/all_histogram_fill_Subtypes.pdf",width = 7,height=5) 
+ggsave(useDingbats=F,plot = Wrel_Status,filename = "../DMFE/all_histogram_status.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_Coverage,filename = "../DMFE/all_histogram_coverage.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "../DMFE/all_histogram_fill.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_ST,filename = "../DMFE/all_histogram_fill_Subtypes.pdf",width = 7,height=5) 
 
 ```
 
 ```{r DMFE_HiConfidence}
-dir.create("./DMFE")
+dir.create("../DMFE")
 WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])[HC=="HC",]
 WtableLim[wrel>2,wrel:=2,]#stack at 2.0
 
@@ -135,14 +145,14 @@ Wrel_Coverage<-W+
   guides(fill=guide_legend(title="log10(frequency)"))+
   scale_fill_brewer(palette = "YlGnBu",direction = 1)
 
-ggsave(useDingbats=F,plot = Wrel_Status,filename = "DMFE/HC_histogram_status.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage,filename = "DMFE/HC_histogram_coverage.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "DMFE/HC_histogram_fill.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "DMFE/HC_histogram_fill_Subtypes.pdf",width = 7,height=5) 
+ggsave(useDingbats=F,plot = Wrel_Status,filename = "../DMFE/HC_histogram_status.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_Coverage,filename = "../DMFE/HC_histogram_coverage.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "../DMFE/HC_histogram_fill.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = Wrel_Coverage_Fill,filename = "../DMFE/HC_histogram_fill_Subtypes.pdf",width = 7,height=5) 
 ```
 
 ```{r Substitution Types (All)}
-dir.create("SubsType_Dist")
+dir.create("../SubsType_Dist")
 WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])
 WtableLim[wrel>2,wrel:=2,]#stack at 2.0
 
@@ -156,7 +166,7 @@ allwrel_sT_fill<-W+
   ylab("Relative Frequency of Mutations")+
   xlab("Relative Fitness")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "SubsType_Dist/all_CountAreaPlot_Subtypes.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "../SubsType_Dist/all_CountAreaPlot_Subtypes.pdf",width = 7,height=5)
 
 #DMFE by density
 allwrel_sT_dens<-W+geom_area(aes(wrel,group=subTypes,fill=subTypes),lwd=0.2,color="black",position='stack',binwidth=0.05,stat='bin')+
@@ -164,7 +174,7 @@ allwrel_sT_dens<-W+geom_area(aes(wrel,group=subTypes,fill=subTypes),lwd=0.2,colo
   ylab("Count")+
   xlab("Fitness (Wrel)")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_dens,filename = "SubsType_Dist/all_DensityFill_Subtypes.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_dens,filename = "../SubsType_Dist/all_DensityFill_Subtypes.pdf",width = 7,height=5)
 
 allwrel_sT_countDensity<-W+
   geom_vline(xintercept = 1)+
@@ -174,49 +184,14 @@ allwrel_sT_countDensity<-W+
   ylab("Relative Density of Mutations")+
   xlab("Relative Fitness")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_countDensity,filename = "SubsType_Dist/all_DensityFillPlot_Subtypes.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_countDensity,filename = "../SubsType_Dist/all_DensityFillPlot_Subtypes.pdf",width = 7,height=5)
 
 WtableNS<-Wtable[Wtable$subTypes%in%c("NC","C","U","X"),]
-pdf("SubsType_Dist/all_WStatusDistribution.pdf",width=7, height=5)
-par(mfrow=c(2,2),las=2,cex=0.5)
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[host==h&set==s]$subTypes,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Substitution Type",h,s))
-  }
-}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s]$subTypes~WtableNS[host==h&set==s]$status,col=ST.colors,
-         ylab = "Substitution Type",xlab=paste("Fitness Class",h,s))
-  }
-}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s]$status~WtableNS[host==h&set==s]$reg,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[h==host&set==s,]$class,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[h==host&set==s,]$class,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
-
-dev.off()
 ```
 
 ```{r Substitution Types (Hi Conf.)}
-dir.create("SubsType_Dist")
-WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])
+dir.create("../SubsType_Dist")
+WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])[HC=="HC",]
 WtableLim[wrel>2,wrel:=2,]#stack at 2.0
 
 W<-ggplot(WtableLim)+theme_pubr()
@@ -229,7 +204,7 @@ allwrel_sT_fill<-W+
   ylab("Relative Frequency of Mutations")+
   xlab("Relative Fitness")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "SubsType_Dist/HC_CountAreaPlot_Subtypes.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "../SubsType_Dist/HC_CountAreaPlot_Subtypes.pdf",width = 7,height=5)
 
 #DMFE by density
 allwrel_sT_dens<-W+geom_area(aes(wrel,group=subTypes,fill=subTypes),lwd=0.2,color="black",position='stack',binwidth=0.05,stat='bin')+
@@ -237,7 +212,7 @@ allwrel_sT_dens<-W+geom_area(aes(wrel,group=subTypes,fill=subTypes),lwd=0.2,colo
   ylab("Count")+
   xlab("Fitness (Wrel)")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_dens,filename = "SubsType_Dist/HC_DensityFill_Subtypes.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_dens,filename = "../SubsType_Dist/HC_DensityFill_Subtypes.pdf",width = 7,height=5)
 
 allwrel_sT_countDensity<-W+
   geom_vline(xintercept = 1)+
@@ -247,48 +222,13 @@ allwrel_sT_countDensity<-W+
   ylab("Relative Density of Mutations")+
   xlab("Relative Fitness")+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = allwrel_sT_countDensity,filename = "SubsType_Dist/HC_DensityFillPlot_Subtypes.pdf",width = 7,height=5)
-
-WtableNS<-Wtable[Wtable$subTypes%in%c("NC","C","U","X"),]
-pdf("SubsType_Dist/all_WStatusDistribution.pdf",width=7, height=5)
-par(mfrow=c(2,2),las=2,cex=0.5)
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[host==h&set==s]$subTypes,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Substitution Type",h,s))
-  }
-}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s]$subTypes~WtableNS[host==h&set==s]$status,col=ST.colors,
-         ylab = "Substitution Type",xlab=paste("Fitness Class",h,s))
-  }
-}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s]$status~WtableNS[host==h&set==s]$reg,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[h==host&set==s,]$class,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
-
-for (h in c("Human","Mosquito")){
-  for (s in c("A","B")){
-    plot(WtableNS[host==h&set==s,]$status~WtableNS[h==host&set==s,]$class,col=status.colors,
-         ylab = "Fitness Class",xlab=paste("Genomic Region",h,s))
-  }}
+ggsave(useDingbats=F,plot = allwrel_sT_countDensity,filename = "../SubsType_Dist/HC_DensityFillPlot_Subtypes.pdf",width = 7,height=5)
 
 dev.off()
 ```
 
 ```{r, window}
-dir.create("WindowAnalysis")
+dir.create("../WindowAnalysis")
 #Filter Synonymous mutations from ORF and select only hi-conf SNV (sufficient coverage)
 filteredvalues<-dcast(Wtable[HC=="HC"&muttype!="Syn"],formula = num+ID~host,value.var = 'wrel',fun.aggregate = function(X) {mean(X,na.rm = T)})
 N<-max(filteredvalues$num)
@@ -320,13 +260,13 @@ windowPlot<-ggplot(Wm)+
   ylab("Fitness (mean of 21 nt window)")+
   scale_color_gradientn(limits=c(0,2),na.value = brewer.pal(name = "YlOrRd",9)[4],colors = MLHmat,values=scales::rescale(seq(0,2,by = 0.1)))
 
-ggsave(plot = windowPlot,useDingbats=F,width=8,height=4,filename = paste('WindowAnalysis/Window_21_NonSYN.pdf',sep=""))
+ggsave(plot = windowPlot,useDingbats=F,width=8,height=4,filename = paste('../WindowAnalysis/Window_21_NonSYN.pdf',sep=""))
 
 ```
 
 
 ```{r ViolinPlots}
-dir.create("DMFE_Comparison")
+dir.create("../DMFE_Comparison")
 WtableLim<-unique(Wtable[,!c('index',"weightW","passage","freq")])
 WtableLim[wrel>2.0,wrel:=2.0,]
 
@@ -351,7 +291,7 @@ mutTypevio<-W+
   geom_boxplot(aes(muttype,wrel),fill="white", width = 0.2)+
   facet_grid(~host)+
   scale_fill_manual(values=MT.colors)
-ggsave(useDingbats=F,plot = mutTypevio,filename = "DMFE_Comparison/MutType_Vio.pdf",width = 7,height=3)
+ggsave(useDingbats=F,plot = mutTypevio,filename = "../DMFE_Comparison/MutType_Vio.pdf",width = 7,height=3)
 
 classvio<-W+
   geom_hline(yintercept = 1)+
@@ -371,7 +311,7 @@ CNC_vio<-W+
   facet_grid(~host)+
   guides(fill=guide_legend(title="Sub. Type"))+
   scale_fill_manual(values=ST.colors)
-ggsave(useDingbats=F,plot = CNC_vio,filename = "DMFE_Comparison/CNC_Vio.pdf",width = 7,height=3)
+ggsave(useDingbats=F,plot = CNC_vio,filename = "../DMFE_Comparison/CNC_Vio.pdf",width = 7,height=3)
 #W+geom_violin(data = Wtable[muttype=="NonSyn",],aes(Class,wrel,fill=subTypes),scale='width')+
 #  facet_grid(set~host)+
 #  scale_fill_brewer(palette = "YlOrRd")
@@ -381,8 +321,8 @@ UTR<-W+geom_hline(yintercept = 1)+
   geom_boxplot(aes(reorder(RNAannot,num,mean),wrel),fill='white', width = 0.1)+
   facet_grid(set~host)+guides(fill=guide_legend(title="UTR Structure"))
 
-ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "DMFE_Comparison/allWrel_subTypesDensity.pdf",width = 7,height=5)
-ggsave(useDingbats=F,plot = UTR,filename = "DMFE_Comparison/UTR_DMFE.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = allwrel_sT_fill,filename = "../DMFE_Comparison/allWrel_subTypesDensity.pdf",width = 7,height=5)
+ggsave(useDingbats=F,plot = UTR,filename = "../DMFE_Comparison/UTR_DMFE.pdf",width = 7,height=5)
 
 
 
@@ -390,12 +330,12 @@ ggsave(useDingbats=F,plot = UTR,filename = "DMFE_Comparison/UTR_DMFE.pdf",width 
 
 
 ```{r FreqPlots}
-dir.create("alleleFrequencies")
+dir.create("../alleleFrequencies")
 W<-ggplot(Wtable)+theme_pubr(legend = 'right')
 ilist<-c()
 for (i in levels(Wtable$passage)){
   ilist<-c(i,ilist)
-  ggsave(useDingbats=F,width=7,height=4,filename = paste("alleleFrequencies/",i,'.pdf',sep=""),
+  ggsave(useDingbats=F,width=7,height=4,filename = paste("../alleleFrequencies/",i,'.pdf',sep=""),
          W+
            geom_rect(show.legend=F,data=data.frame(regS,regE),aes(xmin=regS,xmax=regE,ymin=1E-6,ymax=1,alpha=rep(as.factor(c(1,0)),length.out=length(regS))))+
            geom_point(data=Wtable[passage%in%ilist],show.legend = F,aes(num,freq,size=freq,color=muttype,alpha=as.factor(1)))+
@@ -433,37 +373,37 @@ BothCompare<-ggplot(castfreqs)+theme_bw()+
             geom_point(aes(Human_A_MF.7,Mosquito_A_MF.7,color=muttype), alpha = 0.7)+
   scale_y_log10(limits=c(1E-6,1))+scale_x_log10(limits=c(1E-6,1))+coord_fixed(ratio = 1, xlim = NULL, ylim = NULL, expand = TRUE,clip = "on")
 
-ggsave(useDingbats=F,filename = "alleleFrequencies/compareplots.pdf",ggarrange(plotlist = list(HuCompare,MoCompare,BothCompare), common.legend=T,ncol=3),height=3.5,width = 10)
+ggsave(useDingbats=F,filename = "../alleleFrequencies/compareplots.pdf",ggarrange(plotlist = list(HuCompare,MoCompare,BothCompare), common.legend=T,ncol=3),height=3.5,width = 10)
 
 #by(paste(acast(Wtable,pos~.,value.var = "wtRes",fun.aggregate = function(X){X[1]}),collapse = ""))
 ```
 
 #Status
 ```{r trajectories}
-dir.create("trajectories")
+dir.create("../trajectories")
 Wtable[,joint:=paste(ID,status,sep = " ")]
 
 W<-ggplot(Wtable)+theme_pubr()
 
-ggsave(useDingbats=F,width=8.5,height=5,filename = "trajectories/All_trajectories.pdf",
+ggsave(useDingbats=F,width=8.5,height=5,filename = "../trajectories/All_trajectories.pdf",
        W+geom_path(aes(passage,freq,group=ID,color=status))+
          scale_size_continuous(range = c(0.2,4),limits = c(0,2.5))+
          scale_color_manual(values = status.colors)+
          facet_grid(host~set)+scale_y_log10(limits=c(1E-6,1)))
 
-ggsave(useDingbats=F,width=8.5,height=5,filename = "trajectories/All_meantrajectories.pdf",
+ggsave(useDingbats=F,width=8.5,height=5,filename = "../trajectories/All_meantrajectories.pdf",
        W+stat_summary(aes(passage,freq,group=as.factor(binnedW),color=as.factor(binnedW)),fun.y= function(X){median(X,na.rm = T)},geom="smooth")+
          scale_color_manual(values=MLHmat)+
          facet_grid(host~set)+scale_y_log10(limits=c(1E-6,1)))
 
-ggsave(useDingbats=F,width=8.5,height=11,filename = "trajectories/All_binnedtrajectories.pdf",
+ggsave(useDingbats=F,width=8.5,height=11,filename = "../trajectories/All_binnedtrajectories.pdf",
        W+stat_summary(aes(passage,freq,group=as.factor(binnedW),color=as.factor(binnedW)),geom='path')+
          scale_size_continuous(range = c(0.2,4),limits = c(0,2.5))+
          scale_color_manual(values=MLHmat)+
          facet_grid(scales = "free_y",subs.type~host+set)+scale_y_log10()
 )
 
-ggsave(useDingbats=F,width=8.5,height=10,filename = "trajectories/All_Wtrajectories.pdf",
+ggsave(useDingbats=F,width=8.5,height=10,filename = "../trajectories/All_Wtrajectories.pdf",
        W+geom_path(data=Wtable[status=="N",],aes(passage,freq,group=ID,color=status))+
          geom_path(data=Wtable[status=="L",],aes(passage,freq,group=ID,color=status))+
          geom_path(data=Wtable[status=="D",],aes(passage,freq,group=ID,color=status))+
@@ -480,6 +420,7 @@ ggsave(useDingbats=F,width=8.5,height=10,filename = "trajectories/All_Wtrajector
 ```
 
 ```{r mutationRates}
+dir.create("../MuRates")
 Wtable[subs.type%in%c("AG","GA","CT","TC"),TiTv:="Ti"]
 Wtable[subs.type%in%c("GC","CG","AT","TA","AC","CA","GT","TG"),TiTv:="Tv"]
 
@@ -497,21 +438,21 @@ statuses<-dcast(WtableLim,ID~host+set,value.var = "status")
 
 M<-merge(WT,statuses,by="ID")
 
-ggsave("MutationRates.pdf",width=7, height = 5,ggplot(Wtable)+geom_pointrange(aes(reorder(as.factor(subs.type),murate),col=TiTv, y=murate, ymin=murate-muSEM,ymax=murate+muSEM))+scale_y_log10()+facet_grid(set~host)+theme_pubr())
+ggsave("../MuRate/MutationRates.pdf",width=7, height = 5,ggplot(Wtable)+geom_pointrange(aes(reorder(as.factor(subs.type),murate),col=TiTv, y=murate, ymin=murate-muSEM,ymax=murate+muSEM))+scale_y_log10()+facet_grid(set~host)+theme_pubr())
 
 ```
 
 
 Fitness wave visualization with binned fitness estimates
 ```{r FitnessWave}
-dir.create("fitness_wave")
+dir.create("../fitness_wave")
 binnedWDF<-acast(Wtable[!(host=="Mosquito"&passage=="MF.8"&set=="B"),],host+set+binnedW~passage,value.var="freq",fun.aggregate = sum,fill = NaN)
 
 binnedWDF[is.na(binnedWDF[,"MF.8"]),"MF.8"]<-rowMeans(binnedWDF[is.na(binnedWDF[,"MF.8"]),c("MF.7","MF.9")])
 for (frame in seq(1,360,by = 75)){
 # tiff(paste("FitnessWave_frame",formatC(frame, width = 4, format = "d", flag = "0")
 # ,".tiff",sep = ""),width = 5,height=6,res = 350,units = 'in')
-pdf(paste("fitness_wave/FitnessWave_frame",formatC(frame, width = 4, format = "d", flag = "0")
+pdf(paste("../fitness_wave/FitnessWave_frame",formatC(frame, width = 4, format = "d", flag = "0")
 ,".pdf",sep = ""),width = 5,height=6)
 par(mfrow=c(2,2),cex=0.5,margin.table(matrix(c(0,0,0,0),1)))
 for(i in 1:4){
@@ -532,7 +473,7 @@ dev.off()
 # # # # # # # #
 
 ```{r DimensionReduction}
-
+dir.create("../embedding")
 inMat<-dcast(Wtable,value.var = "freq",formula = ID+num+reference+mut+wtRes+mutRes+reg+res~host+set+passage)
 inMat[is.na(inMat)]<-0
 
@@ -574,13 +515,13 @@ C4<-PCscore+
   geom_text(data = DRPosData[abs(DRPosData$scores.PC4)>.1,],aes(num,scores.PC4,label=paste(reg," ",ifelse(num<10272&num>=97,wtRes,reference),ifelse(num<10272&num>=97,res,num),ifelse(num<10272&num>=97,mutRes,mut),sep="")),cex=2.5)+xlab("Position")+ylab("PC4")+
   coord_cartesian(ylim=c(-0.5,.5))
 
-ggsave(useDingbats=F,"PCscores.pdf",ggarrange(align = "h",plotlist = list(C1.2,C3,C4),ncol = 1,nrow = 3),width=4,height=6)
+ggsave(useDingbats=F,"../embedding/PCscores.pdf",ggarrange(align = "h",plotlist = list(C1.2,C3,C4),ncol = 1,nrow = 3),width=4,height=6)
 
 PCplot<-ggplot(data.frame(DRSampleData))+theme_pubr()+
   scale_alpha_manual(values=c(1,0.4))+
   scale_color_manual(values=Host.colors)
 
-ggsave(useDingbats=F,"mdsplot.pdf",PCplot+
+ggsave(useDingbats=F,"../embedding/mdsplot.pdf",PCplot+
          geom_path(aes(X1,X2,color=paste(info.name.1,info.name.2),group=paste(info.name.1,info.name.2),label=strsplit2(info.name.3,split = "MF.")[,2]))+
          geom_point(cex=5,pch=21,aes(X1,X2,fill=paste(info.name.1,info.name.2)))+
          geom_text(cex=3,aes(X1,X2,label=strsplit2(info.name.3,split = "MF.")[,2]))+
@@ -604,131 +545,139 @@ ggsave(useDingbats=F,PCplot+
          geom_point(aes(PC1,PC4,color=paste(info.name.1,info.name.2)))+
          geom_text(cex=2,nudge_x = 0.01,aes(PC1,PC4,label=strsplit2(info.name.3,split = "MF.")[,2]))+
          coord_fixed(ratio = 1, xlim = NULL, ylim = NULL, expand = TRUE,clip = "on"),
-       filename = "PC1-4.pdf",width=4,height=3.7)
+       filename = "../embedding/PC1-4.pdf",width=4,height=3.7)
 
 ggsave(useDingbats=F,PCplot+
          geom_path(aes(PC2,PC3,color=paste(info.name.1,info.name.2),group=paste(info.name.1,info.name.2)))+
          geom_point(aes(PC2,PC3,color=paste(info.name.1,info.name.2)))+
          geom_text(cex=2,nudge_x = 0.01,aes(PC2,PC3,label=strsplit2(info.name.3,split = "MF.")[,2]))+
          coord_fixed(ratio = 1, xlim = NULL, ylim = NULL, expand = TRUE,clip = "on"),
-       filename = "PC2-3.pdf",width=4,height=3.7)
+       filename = "../embedding/PC2-3.pdf",width=4,height=3.7)
 
 ggsave(useDingbats=F,PCplot+
          geom_path(aes(PC4,PC2,color=paste(info.name.1,info.name.2),group=paste(info.name.1,info.name.2)))+
          geom_point(aes(PC4,PC2,color=paste(info.name.1,info.name.2)))+
          geom_text(cex=2,nudge_x = 0.01,aes(PC4,PC2,label=strsplit2(info.name.3,split = "MF.")[,2])),
-       filename = "PC2-4.pdf",width=4,height=3.7)
+       filename = "../embedding/PC2-4.pdf",width=4,height=3.7)
 
 ggsave(useDingbats=F,PCplot+
          geom_path(aes(PC3,PC4,color=paste(info.name.1,info.name.2),group=paste(info.name.1,info.name.2)))+
          geom_point(aes(PC3,PC4,color=paste(info.name.1,info.name.2)))+
          geom_text(cex=2,nudge_x = 0.01,aes(PC3,PC4,label=strsplit2(info.name.3,split = "MF.")[,2])),
-       filename = "PC3-4.pdf",width=4,height=3.7)
+       filename = "../embedding/PC3-4.pdf",width=4,height=3.7)
 
 ```
 
 
+```{r generate matrices for sampling genome fitness}
+freqT<-dcast.data.table(Wtable,num+host+set+passage~subs.type,value.var = "freq",fill=0)
+freqT[,WT:=1-rowSums(freqT[,-(1:4)])]
+wrelT<-dcast.data.table(Wtable,num+host+set+passage~subs.type,value.var = "wrel",fill=1.0)
+wrelT[,WT:=1.0]
+statT<-dcast.data.table(Wtable,num+host+set+passage~subs.type,value.var = "status")
+statT[,WT:="WT"]
+fwrite("../Data_Tables/freqTable_Sampling.csv",x=freqT)
+fwrite("../Data_Tables/fitnessTable_Sampling.csv",x=wrelT)
+fwrite("../Data_Tables/statusTable_Sampling.csv",x=statT)
+```
+
+
+```{r }
+
+CI50<-function(X){
+  result=sort(X)[round(c(.25,.75)*length(X))]
+  names(result)=c("y","ymin","ymax")
+  return(result)
+}
+
+CI95.ymin<-function(X){
+  ymin=sort(X)[round(c(.025)*length(X))]
+  return(ymin)
+}
+
+CI95.ymax<-function(X){
+  ymax=sort(X)[round(c(.975)*length(X))]
+  return(ymax)
+}
+
+readFEs<-function(fname){
+  fitnessEstimates=fread(fname,header = T,stringsAsFactors = T,col.names = c("R","W","name"))
+  fitnessEstimates[,host:=as.factor(limma::strsplit2(name,"_")[,1])]
+  fitnessEstimates[,set:=as.factor(limma::strsplit2(name,"_")[,2])]
+  fitnessEstimates[,passage:=as.factor(limma::strsplit2(name,"_")[,3])]
+  #print(fitnessEstimates)
+  return(fitnessEstimates)
+}
+#read in sampled genome fitnesses
+fitnessEstimatesAll<-readFEs("../All_FitnessSamples_10-18.csv")
+fitnessEstimatesB<-readFEs("../B_FitnessSamples_10-18.csv")
+fitnessEstimatesL<-readFEs("../L_FitnessSamples_10-18.csv")
+fitnessEstimatesN<-readFEs("../N_FitnessSamples_10-18.csv")
+fitnessEstimatesD<-readFEs("../D_FitnessSamples_10-18.csv")
+#Bind into single Data.table
+fitnessEstimates<-rbindlist(use.names = T,list(All=fitnessEstimatesAll,B=fitnessEstimatesB,N=fitnessEstimatesN,L=fitnessEstimatesL,D=fitnessEstimatesD),idcol = T)
+
+fitnessEstimates[,.id:=as.factor(.id)]
+fitnessEstimates[,passage:=as.integer(passage)]
+
+
+
+```
+
+```{r plot genome fitness estimates}
+
+###Analysis By Class Mean fitness
+
+Host.colors<- brewer.pal(name = "Set1",4)[c(1,2)]
+status.colors<- c(
+  brewer.pal(name = "Greys",9)[5],
+  brewer.pal(name = "Purples",9)[7],
+  "#000000",
+  brewer.pal(name = "YlOrRd",9)[4]
+)
+
+plotFEs<-function(fE,name="meanFitness_MaskedGenomes.pdf"){
+  fE<-fitnessEstimates[R<1000]
+  WP<-ggplot(fE)+theme_bw()
+  WPsmooth<-WP+
+    stat_summary(aes(passage,y=W,color=.id),geom = "smooth",fun.data=mean_cl_boot)+
+    facet_grid(host~set,scales = "free_y")+
+    scale_color_manual(values = c(status.colors[c(4,2,3,1)]))+
+    scale_x_continuous(breaks = 1:9)+
+    scale_y_continuous(trans="log2")
+  
+  WPribbon<-WP+
+    stat_summary(aes(passage,y=W,fill=.id),geom = "ribbon",fun.data = mean_cl_boot,alpha=0.5)+
+    stat_summary(aes(passage,y=W,col=.id),geom = "line",fun = mean)+
+    facet_grid(host~set,scales = "free_y")+
+    scale_fill_manual(values = c(status.colors[c(4,2,3,1)]))+
+    scale_color_manual(values = c(status.colors[c(4,2,3,1)]))+
+    scale_x_continuous(breaks = 1:9)+
+    scale_y_continuous(trans="log2")
+  
+  ggsave(WPsmooth,filename = name,width=6,height=4)
+  ggsave(WPribbon,filename = paste("ribbon",name,sep=""),width=6,height=4)
+}
+
+plotFEs(fitnessEstimates,name = "meanFitness_SimulatedGenomes_test.pdf")
+
+```
+
 ```{r phenotypicAnalysis}
-load("~/GitHub/DData_Tables/allPheno.Rdata")
+load("../Data_Tables/allPheno.Rdata")
 #View(allPheno)
 
 castH<-dcast(allPheno,Host+set+passage~.,value.var = "Huh7",fun.aggregate = mean)
 castM<-dcast(allPheno,Host+set+passage~.,value.var = "C6.36",fun.aggregate = mean)
 casted<-cbind(castH[,-4],Huh=castH[,4],Mo=castM$.)
 
-ggplot(casted)+geom_path(aes(Huh,Mo,group=paste(Host,set),col=Host))+scale_x_log10()+scale_y_log10()
-
-ggplot(casted)+geom_path(aes())
-
-ggplot(allPheno)+geom_point(aes(passage,Huh7))
-
-fitnessEstimates=fread("~/RSandbox/FitnessSamples.csv",header = T)
-oppfitnessEstimates=fread("~/RSandbox/OppsFitnessSamples.csv",header = T)
-
-fitnessEstimates[,host:=limma::strsplit2(name,"_")[,1],by=name]
-fitnessEstimates[,set:=limma::strsplit2(name,"_")[,2],by=name]
-fitnessEstimates[,passage:=limma::strsplit2(name,"_")[,3],by=name]
-
-oppfitnessEstimates[,host:=limma::strsplit2(name,"_")[,1],by=name]
-oppfitnessEstimates[,set:=limma::strsplit2(name,"_")[,2],by=name]
-oppfitnessEstimates[,passage:=limma::strsplit2(name,"_")[,3],by=name]
-
-medsAd<-fitnessEstimates[,median_mad(`0`),by=name]
-medsAd<-medsAd[,target:=limma::strsplit2(name,"_")[,1]]
-medsOpp<-oppfitnessEstimates[,median_mad(`0`),by=name]
-medsOpp<-medsOpp[,target:=ifelse(limma::strsplit2(name,"_")[,1]=="Mosquito","Human","Mosquito"),]
-
-M<-merge(medsAd,medsOpp,by = "name",suffixes = c("Adapted","Opp"))
-
-M[,host:=limma::strsplit2(name,"_")[,1],by=name]
-M[,set:=limma::strsplit2(name,"_")[,2],by=name]
-M[,passage:=limma::strsplit2(name,"_")[,3],by=name]
-
-
-ggsave(scale = 1,width = 7,filename = "test_Pareto.pdf",
-  ggplot()+
-  geom_path(data=M[targetOpp=="Human",],aes(yOpp,yAdapted,col=paste(host,set)))+
-  geom_pointrange(data=M[targetOpp=="Human",],aes(yOpp,ymin=yminAdapted,ymax=ymaxAdapted,y = yAdapted,col=paste(host,set)))+#mosq ~ human
-  geom_segment(data=M[targetOpp=="Human",],aes(x=yminOpp,xend=ymaxOpp,y=yAdapted,yend=yAdapted,col=paste(host,set)))+#mosq ~ human
-  geom_path(data=M[targetOpp=="Mosquito",],aes(yAdapted,yOpp,col=paste(host,set)))+
-  geom_pointrange(data=M[targetOpp=="Mosquito",],aes(yAdapted,ymin=yminOpp,ymax=ymaxOpp,y = yOpp,col=paste(host,set)))+#mosq ~ human
-  geom_segment(data=M[targetOpp=="Mosquito",],aes(x=yminAdapted,xend=ymaxAdapted,y=yOpp,yend=yOpp,col=paste(host,set)))+ #mosq ~ human
-    xlab("Median Fitness Human")+ylab("Median Fitness Mosquito")
-)
-Wests<-dcast(fitnessEstimates,value.var="0",formula = name~.,fun.aggregate = median)
+Wests<-dcast(fitnessEstimates,value.var="W",formula = name~.,fun.aggregate = median)#median genome fitness estimates ffrom each sampled population.
 
 editPheno<-allPheno[order(allPheno$Host,allPheno$set),][-35,]
 mPheno<-melt(editPheno,variable.name = "testcell",id.vars = c("Host","set","passage","RNA.bioRep","RNA.TechRep"))
 editPheno<-dcast(mPheno,Host+set+passage~testcell,fun.aggregate = mean)[-35,]
 
-mergedData<-data.frame(DRSampleData,editPheno,W=Wests)
-
-mD<-ggplot(mergedData)+
-  theme_pubr(legend = "right")+
-  scale_alpha_discrete(range = c(.9,.5))
-
-ggsave(useDingbats=F,filename = "RelativeFitness.pdf",
-  mD+
-  geom_path(aes(X1,X2,group=paste(set,Host)))+
-  geom_point(pch=21,aes(X1,X2,size=W..,fill=Huh7/`C6.36`))+
-  scale_size_area(breaks=c(0.05,1,2,4,8,16),max_size = 15)+
-  scale_fill_gradient2(trans="log10",mid='lightgrey',high = Host.colors[1],low = Host.colors[2],limits=c(0.05,20))
-)
-
-ggsave(filename = "entropy.pdf",mD+
-  geom_path(lwd=2,aes(passage, byCol, group=paste(Host,set),color=Host,alpha=set))+
-  scale_color_manual(values = Host.colors))
-
-titer_H<-ggplot(mergedData[mergedData$Host=="Huh",])+
-  theme_pubr(legend = "right")+
-  geom_point(aes(W..,titer_H,color=Host),lwd=2)+
-  stat_smooth(aes(W..,titer_H,group=paste(Host,set),color=Host),method = 'lm',geom = "line")+
-  scale_color_manual(values = Host.colors[1])+
-  scale_x_log10(breaks=c(.5,1,2,4,8,16))+scale_y_log10(breaks=c(1E5,3E5,1E6,3E6,1E7,3E7,1E8))+facet_grid(~set,scales = 'free_y')+xlab("Median Genome Fitness")+ylab("Titer")+scale_alpha_continuous()
-
-titer_M<-ggplot(mergedData[mergedData$Host=="C6/36",])+
-  theme_pubr(legend = "right")+
-  geom_point(aes(W..,titer_M,group=paste(Host,set),color=Host),lwd=2)+
-  stat_smooth(aes(W..,titer_M,group=paste(Host,set),color=Host),method = 'lm',geom = "line")+
-  scale_color_manual(values = Host.colors[2])+
-  scale_x_log10(breaks=c(.5,1,2,4,8,16))+scale_y_log10(breaks=c(1E5,3E5,1E6,3E6,1E7,3E7,1E8))+facet_grid(~set,scales = 'free_y')+xlab("Median Genome Fitness")+ylab("Titer")+scale_alpha_continuous()
-
-H<-ggplot(mergedData[mergedData$Host=="Huh",])+
-  theme_pubr(legend = "right")+
-  geom_point(aes(W..,Huh7,color=Host),lwd=2)+
-  stat_smooth(aes(W..,Huh7,group=paste(Host,set),color=Host),method = 'lm',geom = "line")+
-  scale_color_manual(values = Host.colors[1])+
-  scale_x_log10(breaks=c(.5,1,2,4,8,16))+scale_y_log10(breaks=c(1E5,3E5,1E6,3E6,1E7,3E7,1E8))+facet_grid(~set,scales = 'free_y')+xlab("Median Genome Fitness")+ylab("Titer")+scale_alpha_continuous()
-
-M<-ggplot(mergedData[mergedData$Host=="C6/36",])+
-  theme_pubr(legend = "right")+
-  geom_point(aes(W..,C6.36,group=paste(Host,set),color=Host),lwd=2)+
-  stat_smooth(aes(W..,C6.36,group=paste(Host,set),color=Host),method = 'lm',geom = "line")+
-  scale_color_manual(values = Host.colors[2])+
-  scale_x_log10(breaks=c(0.1,.5,1,2,4,8,16))+scale_y_log10(breaks=c(1E5,3E5,1E6,3E6,1E7,3E7,1E8))+facet_grid(~set,scales = 'free_y')+xlab("Median Genome Fitness")+ylab("Titer")+scale_alpha_continuous()
-
-  ggsave(useDingbats=F,width = 7,height=2.7,ggpubr::ggarrange(titer_H,titer_M,ncol = 2,common.legend = T),filename = "MeanFitnessVsTiter.pdf")
-  ggsave(useDingbats=F,width = 7,height=2.7,ggpubr::ggarrange(H,M,ncol = 2,common.legend = T),filename = "MeanFitnessVsTiter_2.pdf")
+mergedData<-data.frame(editPheno,W=Wests)
 
 RsqAdjM<-function(X){
   Y<-X[sample(1:nrow(X),replace = T),]
@@ -742,16 +691,16 @@ RsqAdjH<-function(X){
   return(Z)
   }
 
-GO<-function(X){
+ComputeR<-function(X){
   S=as.character(X$set[1])
   H=as.character(X$Host[1])
-  sampledStat=data.frame(set=S,host=H,cell="C636",adjRsq=replicate(RsqAdjM(X),n = 10000))
-  humans=data.frame(set=S,host=H,cell="Human",adjRsq=replicate(RsqAdjH(X),n = 10000))
-  sampledStat=rbind(sampledStat,humans)
+  mosqStat=data.frame(set=S,host=H,cell="C636",adjRsq=replicate(RsqAdjM(X),n = 10000))
+  humanStat=data.frame(set=S,host=H,cell="Human",adjRsq=replicate(RsqAdjH(X),n = 10000))
+  sampledStat=rbind(mosqStat,humanStat)
   return(sampledStat)
 }
 
-allboots<-rbindlist(with(mergedData,by(mergedData,list(set,Host),FUN = GO)))
+allboots<-rbindlist(with(mergedData,by(mergedData,list(set,Host),FUN = ComputeR)))
 summaryOfBoots<-allboots[,  list(meanR=mean(sqrt(adjRsq)), low=sqrt(adjRsq[order(adjRsq)][250]),high=sqrt(adjRsq[order(adjRsq)][9750])), by=c("host","cell","set")]
 
 ggplot(allboots)+geom_boxplot(aes(host,adjRsq,col=cell))+facet_grid(~set)
@@ -762,9 +711,9 @@ with(mergedData,by(mergedData,Host,FUN = function(X){summary(lm(X$W..~X$titer_M)
 
 with(mergedData,by(mergedData,Host,FUN = function(X){summary(lm(X$W..~X$titer_H))}))
 
-viability=fread("/Users/ptdolan/Research/CirSeq/Dengue/Shuhei_ExperimentalData/PhenotypicData_2017/VirusTiter_Viability_041718.txt",sep = "\t")
+viability=fread("../Data_Tables/VirusTiter_Viability_041718.txt",sep = "\t")
 
-mV<-melt(viability,id.vars = c(1,11,12),value.name = 'titer',variable.name = 'passage')
+mV<-melt.data.table(viability,id.vars = c(1,11,12),value.name = 'titer',variable.name = 'passage')
 mV[,passage:=strsplit2(passage,"P")[,2]]
 mV[,Set:=strsplit2(Population," ")[,2]]
 mV[,host:=ifelse(strsplit2(Population," ")[,1]=="Huh","Human","Mosquito")]
@@ -826,55 +775,3 @@ mCorRels<-melt(CorRels)
 mCorRels$sets=paste(mCorRels$host,mCorRels$Set)
 ```
 
-```{r fitness comparisons}
-Wt<-WtableLim
-UCI<-dcast.data.table(Wt,ID~host+set,value.var="wrel.ciUpper")
-MEAN<-dcast.data.table(Wt,ID~host+set,value.var="wrel")
-LCI<-dcast.data.table(Wt,ID~host+set,value.var="wrel.ciLower")
-
-ANDM<-Wtable[ID%in%UCI[((UCI$Human_A < MEAN$Mosquito_A)&(UCI$Human_B < MEAN$Mosquito_B))|((MEAN$Human_A < LCI$Mosquito_A)&(MEAN$Human_B < LCI$Mosquito_B)),]$ID]
-
-ANDH<-Wtable[ID%in%UCI[((UCI$Mosquito_A < MEAN$Human_A)&
-                             (UCI$Mosquito_B < MEAN$Human_B))
-                          |((MEAN$Mosquito_A < LCI$Human_A)&(MEAN$Mosquito_B < LCI$Human_B)),]$ID]
-
-ORM<-WtableLim[ID%in%UCI[((UCI$Human_A < LCI$Mosquito_A)|(UCI$Human_B < LCI$Mosquito_B)),]$ID]
-ORH<-WtableLim[ID%in%UCI[((LCI$Human_A > UCI$Mosquito_A)|(LCI$Human_B > UCI$Mosquito_B)),]$ID]
-
-ggsave("MosquitoSpecific_AND.tiff",width=7,height=4,
-ggplot(alpha=0.4)+theme_pubr()+
-  geom_hline(yintercept =1)+ 
-  geom_rect(show.legend=F,data=data.frame(regS,regE),aes(xmin=regS,xmax=regE,ymin=0,ymax=3),alpha=rep(c(.3,0),length.out=length(regS)))+
-  geom_pointrange(data=ANDM,show.legend = F,aes(pch=muttype,num,y = wrel,ymin=wrel.ciLower,ymax=wrel.ciUpper,col=ID,alpha=host))+
-  geom_text(data=ANDM,show.legend=F,aes(y=2.5,x=num,col=ID,label=paste(wtRes,res,mutRes)),angle=90)+scale_color_brewer(palette = "Paired")
-)
-
-ggsave("HumanSpecific_OR.tiff",width=7,height=4,
-ggplot(alpha=0.4)+theme_pubr()+
-  geom_hline(yintercept =1)+ 
-  geom_rect(show.legend=F,data=data.frame(regS,regE),aes(xmin=regS,xmax=regE,ymin=0,ymax=3),alpha=rep(c(.3,0),length.out=length(regS)))+
-  geom_pointrange(data=ORH,aes(pch=muttype,num,y = wrel,ymin=wrel.ciLower,ymax=wrel.ciUpper,col=ID,alpha=host))+
-  geom_text(data=ORH,aes(y=2.5,x=num,col=ID,label=paste(wtRes,res,mutRes)),angle=90)+scale_color_brewer(palette = "Paired")
-)
-ggsave("MosquitoSpecific_Traj.tiff",width=8,height=6,
-ggplot(ANDM)+theme_pubr()+
-  geom_line(aes(lty=host,passage,freq,group=paste(set,host)),lwd=1)+
-  geom_line(aes(lty=host,passage,freq,color=ID,group=paste(set,host)))+
-  scale_y_log10()+
-  facet_wrap(~ID)+
-  scale_x_discrete(labels = as.character(1:9))+
-  geom_text(data=ANDM,cex=3,vjust='left',aes(y=.005,x=2,col=ID,label=paste(reg,wtRes,res,mutRes)))+
-  scale_color_brewer(palette = "Paired")
-)
-ggsave("HumanSpecific_Traj.tiff",width=8,height=4.5,
-ggplot(ANDH)+theme_pubr()+
-  geom_line(aes(lty=host,passage,freq,group=paste(set,host)),lwd=1)+
-  geom_line(aes(lty=host,passage,freq,color=ID,group=paste(set,host)))+
-  scale_y_log10()+
-  facet_wrap(~ID)+
-  scale_x_discrete(labels = as.character(1:9))+
-  geom_text(data=ANDH,cex=3,vjust='left',aes(y=.005,x=2,col=ID,label=paste(reg,wtRes,res,mutRes)))+
-  scale_color_brewer(palette = "Paired")
-)
-
-```
