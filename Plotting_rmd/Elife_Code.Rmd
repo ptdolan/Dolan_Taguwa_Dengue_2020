@@ -301,7 +301,7 @@ classvio<-W+
   geom_boxplot(data = Wtable[class!="UTR"],aes(class,wrel),fill="white", width = 0.2)+
   facet_grid(~host)+
   scale_fill_manual(values = c('black','lightgrey'))
-ggsave(useDingbats=F,plot = classvio,filename = "DMFE_Comparison/Class_Vio.pdf",width = 7,height=3)
+ggsave(useDingbats=F,plot = classvio,filename = "../DMFE_Comparison/Class_Vio.pdf",width = 7,height=3)
 
 CNC_vio<-W+
   geom_hline(yintercept = 1)+
@@ -609,11 +609,11 @@ readFEs<-function(fname){
   return(fitnessEstimates)
 }
 #read in sampled genome fitnesses
-fitnessEstimatesAll<-readFEs("../All_FitnessSamples_10-18.csv")
-fitnessEstimatesB<-readFEs("../B_FitnessSamples_10-18.csv")
-fitnessEstimatesL<-readFEs("../L_FitnessSamples_10-18.csv")
-fitnessEstimatesN<-readFEs("../N_FitnessSamples_10-18.csv")
-fitnessEstimatesD<-readFEs("../D_FitnessSamples_10-18.csv")
+fitnessEstimatesAll<-readFEs("../reconstructedGenomes/All_FitnessSamples.csv")
+fitnessEstimatesB<-readFEs("../reconstructedGenomes/B_FitnessSamples.csv")
+fitnessEstimatesL<-readFEs("../reconstructedGenomes/L_FitnessSamples.csv")
+fitnessEstimatesN<-readFEs("../reconstructedGenomes/N_FitnessSamples.csv")
+fitnessEstimatesD<-readFEs("../reconstructedGenomes/D_FitnessSamples.csv")
 #Bind into single Data.table
 fitnessEstimates<-rbindlist(use.names = T,list(All=fitnessEstimatesAll,B=fitnessEstimatesB,N=fitnessEstimatesN,L=fitnessEstimatesL,D=fitnessEstimatesD),idcol = T)
 

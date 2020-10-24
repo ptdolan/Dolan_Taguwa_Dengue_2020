@@ -1,0 +1,92 @@
+DOMAIN	1476	1653	Peptidase S7  ProRule:PRU00860
+DOMAIN	1655	1811	Helicase ATP-binding
+DOMAIN	1821	1988	Helicase C-terminal
+DOMAIN	2493	2755	mRNA cap 0-1 NS5-type MT
+DOMAIN	3020	3169	RdRp catalytic  ProRule:PRU00539
+NP_BIND	1668	1675	ATP  ProRule:PRU00541
+REGION	 1	15	Interaction with host EXOC1
+REGION	37	72	Hydrophobic; homodimerization of capsid protein C 
+REGION	378	391	Fusion peptide
+REGION	1398	1437	Interacts with and activates NS3 protease  ProRule:PRU00859
+REGION	1659	1662	Important for RNA-binding
+MOTIF	1759	1762	DEAH box  ProRule:PRU00541
+MOTIF	2568	2571	SUMO-interacting motif
+COMPBIAS	97	100	Poly-Arg
+COMPBIAS	1434	1437	Poly-Glu
+COMPBIAS	2148	2154	Poly-Leu
+COMPBIAS	3383	3386	Poly-Glu
+ACT_SITE	1526	1526	Charge relay system; for serine protease NS3 activity  ProRule:PRU00860
+ACT_SITE	1550	1550	Charge relay system; for serine protease NS3 activity  ProRule:PRU00860
+ACT_SITE	1610	1610	Charge relay system; for serine protease NS3 activity  ProRule:PRU00860
+ACT_SITE	2552	2552	For 2'-O-MTase activity
+ACT_SITE	2637	2637	For 2'-O-MTase activity
+ACT_SITE	2672	2672	For 2'-O-MTase activity
+ACT_SITE	2708	2708	For 2'-O-MTase activity
+METAL	2929	2929	Zinc 1 
+METAL	2933	2933	Zinc 1; via tele nitrogen
+METAL	2938	2938	Zinc 1 
+METAL	2941	2941	Zinc 1 
+METAL	3203	3203	Zinc 2; via tele nitrogen
+METAL	3219	3219	Zinc 2 
+METAL	3338	3338	Zinc 2 
+BINDING	2505	2505	mRNA cap  ProRule:PRU00924
+BINDING	2508	2508	mRNA cap; via carbonyl oxygen
+BINDING	2509	2509	mRNA cap  ProRule:PRU00924
+BINDING	2511	2511	mRNA cap; via carbonyl oxygen
+BINDING	2520	2520	mRNA cap  ProRule:PRU00924
+BINDING	2547	2547	S-adenosyl-L-methionine
+BINDING	2577	2577	S-adenosyl-L-methionine; via carbonyl oxygen  ProRule:PRU00924
+BINDING	2578	2578	S-adenosyl-L-methionine; via carbonyl oxygen  ProRule:PRU00924
+BINDING	2595	2595	S-adenosyl-L-methionine
+BINDING	2596	2596	S-adenosyl-L-methionine; via carbonyl oxygen  ProRule:PRU00924
+BINDING	2622	2622	S-adenosyl-L-methionine
+BINDING	2623	2623	S-adenosyl-L-methionine; via carbonyl oxygen  ProRule:PRU00924
+BINDING	2641	2641	mRNA cap  ProRule:PRU00924
+BINDING	2703	2703	mRNA cap  ProRule:PRU00924
+BINDING	2705	2705	mRNA cap  ProRule:PRU00924
+BINDING	2710	2710	S-adenosyl-L-methionine
+SITE	100	101	Cleavage; by viral protease NS3
+SITE	114	115	Cleavage; by host signal peptidase
+SITE	205	206	Cleavage; by host furin  ECO:0000269|PubMed:14963133
+SITE	280	281	Cleavage; by host signal peptidase
+SITE	775	776	Cleavage; by host signal peptidase
+SITE	1127	1128	Cleavage; by host
+SITE	1345	1346	Cleavage; by viral protease NS3
+SITE	1475	1476	Cleavage; by autolysis
+SITE	1932	1932	Involved in NS3 ATPase and RTPase activities
+SITE	1935	1935	Involved in NS3 ATPase and RTPase activities
+SITE	2093	2094	Cleavage; by autolysis
+SITE	2220	2221	Cleavage; by viral protease NS3
+SITE	2243	2244	Cleavage; by host signal peptidase
+SITE	2491	2492	Cleavage; by viral protease NS3
+SITE	2516	2516	mRNA cap binding  ProRule:PRU00924
+SITE	2552	2552	Essential for 2'-O-methyltransferase activity  ProRule:PRU00924
+SITE	2637	2637	Essential for 2'-O-methyltransferase and N-7 methyltransferase activity
+SITE	2638	2638	S-adenosyl-L-methionine binding
+SITE	2672	2672	Essential for 2'-O-methyltransferase activity  ProRule:PRU00924
+SITE	2708	2708	Essential for 2'-O-methyltransferase activity  ProRule:PRU00924
+MOD_RES	2547	2547	Phosphoserine
+CARBOHYD	183	183	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	347	347	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	433	433	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	905	905	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	982	982	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	1134	1134	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	1174	1174	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	2301	2301	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	2305	2305	N-linked (GlcNAc) asparagine; by host
+CARBOHYD	2457	2457	N-linked (GlcNAc) asparagine; by host
+DISULFID	283	310	
+DISULFID	340	401	
+DISULFID	354	385	
+DISULFID	372	396	
+DISULFID	465	565	
+DISULFID	582	613	
+DISULFID	779	790	
+DISULFID	830	918	
+DISULFID	954	998	
+DISULFID	1055	1104	
+DISULFID	1066	1088	
+DISULFID	1087	1091	
+MUTAGEN	13	13	F->A: Loss of degradation of hSec3p
+MUTAGEN	2568	2571	VVDL->AAAA: Complete loss of NS5 sumoylation and decreased viral replication

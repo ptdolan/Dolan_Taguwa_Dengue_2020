@@ -2,3 +2,17 @@
 * text=auto
 .csv filter=lfs diff=lfs merge=lfs -text
 .Rdata filter=lfs diff=lfs merge=lfs -text
+Data_Tables/WtableFreq.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/fitnessTable_Sampling.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/freqTable_Sampling.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/statusTable_Sampling.csv filter=lfs diff=lfs merge=lfs -text
+reconstructedGenomes/All_FitnessSamples.csv filter=lfs diff=lfs merge=lfs -text
+reconstructedGenomes/L_FitnessSamples.csv filter=lfs diff=lfs merge=lfs -text
+reconstructedGenomes/N_FitnessSamples.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/Combined_TANGO_Mutagenesis.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/fitnesstable_All.csv filter=lfs diff=lfs merge=lfs -text
+Plotting_rmd/MutationRates.csv filter=lfs diff=lfs merge=lfs -text
+reconstructedGenomes/B_FitnessSamples.csv filter=lfs diff=lfs merge=lfs -text
+reconstructedGenomes/D_FitnessSamples.csv filter=lfs diff=lfs merge=lfs -text
+Data_Tables/WtableFitness.csv filter=lfs diff=lfs merge=lfs -text
+FitnessTableGeneration/AnnotatedData/fitnesstable_All.csv filter=lfs diff=lfs merge=lfs -text

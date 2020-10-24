@@ -8,8 +8,7 @@ library(dplyr)
 # # Focus size
 # ###############
 # 
-
-setwd("~/GitHub/Dolan_Taguwa_2020/")
+setwd("~/Documents/GitHub/Dolan_Taguwa_2020/  ")
 focus=read.csv("PhenotypicData_2017/FocusSize_SmallN.txt",sep = "\t")
 fm<-melt(focus)
 Namevecs<-strsplit(as.character(fm$variable),split = "")

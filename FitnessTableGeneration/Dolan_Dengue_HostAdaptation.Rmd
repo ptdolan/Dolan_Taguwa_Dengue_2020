@@ -1,0 +1,297 @@
+---
+title: "Dengue CirSeq Output Annotation"
+author: "Patrick T. Dolan, Ph.D."
+date: "10/10/2020"
+output: pdf_document
+---
+```{r}
+setwd("./")
+```
+#Required packages
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+library(viridis)
+library(pbapply)
+library(reshape2)
+library(limma)
+infile="../Data_Tables/wrel_FitnessCalculationsData.RData"
+
+```
+
+Functions:
+```{r ReadInData}
+readData<-function(infile){
+  load(infile,verbose = T)
+  load("../Data_Tables/MRates_All.RData")
+  
+  mrates$SetB$Human$host<-"Human"
+  mrates$SetB$Mosquito$host<-"Mosquito"
+  mrates$SetA$Human$host<-"Human"
+  mrates$SetA$Mosquito$host<-"Mosquito"
+  mrates$SetB$Human$set<-"B"
+  mrates$SetB$Mosquito$set<-"B"
+  mrates$SetA$Human$set<-"A"
+  mrates$SetA$Mosquito$set<-"A"
+  MuRates<-data.table(rbind(mrates$SetA$Human,
+                         mrates$SetB$Human,
+                         mrates$SetA$Mosquito,
+                         mrates$SetB$Mosquito))
+  
+  Fitness$SetB$Human$Summary$host<-"Human"
+  Fitness$SetB$Mosquito$Summary$host<-"Mosquito"
+  Fitness$SetA$Human$Summary$host<-"Human"
+  Fitness$SetA$Mosquito$Summary$host<-"Mosquito"
+  Fitness$SetB$Human$Summary$set<-"B"
+  Fitness$SetB$Mosquito$Summary$set<-"B"
+  Fitness$SetA$Human$Summary$set<-"A"
+  Fitness$SetA$Mosquito$Summary$set<-"A"
+  wrel<-data.table(rbind(Fitness$SetA$Human$Summary,
+                         Fitness$SetB$Human$Summary,
+                         Fitness$SetA$Mosquito$Summary,
+                         Fitness$SetB$Mosquito$Summary))
+  wrel[,set:=factor(set)]
+  wrel[,host:=factor(host)]
+  wrel[,murate:=MuRates$mean[(as.character(MuRates$Type)==subs.type)&(MuRates$host==host)&(MuRates$set==set)],by=c("host","set","subs.type")]
+   wrel[,muSEM:=MuRates$SEM[(as.character(MuRates$Type)==subs.type)&(MuRates$host==host)&(MuRates$set==set)],by=c("host","set","subs.type")]
+  return(wrel)
+}
+```
+
+```{r DataTableAnnotate}
+DTannotate<-function(inputTable,subTypeTable,states,residues,alphaVec,resAnnots){
+  #print(inputTable)
+  pos<-inputTable[,num]
+  N<-nrow(inputTable)
+  inputTable[,index:=1:N]
+  inputTable[,wtRes:=residues[which(states==wtcodon)],by=index]
+  inputTable[,mutRes:=residues[which(states==mutcodon)],by=index]
+  inputTable[is.na(mutRes),mutRes:="U"]
+  inputTable[is.na(wtRes),wtRes:="U"]
+  inputTable[,mutRes:=residues[which(states==mutcodon)],by=index]
+  inputTable[,subTypes:=factor(subTypeTable[wtRes,mutRes],levels = c("C","NC","NS","S","U","X")),by=index]
+  print("Residue Character")
+  wtList<-lapply(inputTable[,wtRes],FUN=function(X){as.list(resAnnots[,X])})
+  wt<-rbindlist(wtList)
+  mutList<-lapply(inputTable[,mutRes],FUN=function(X){as.list(resAnnots[,X])})
+  mu<-rbindlist(mutList)
+  diff<-(mu-wt)
+  print(diff)
+  inputTable<-cbind(inputTable,diff)
+  return(inputTable)
+}
+```
+
+```{r generateTable}
+generateTable<-function(input,pos,region,regS,regE,sspreds,TANGO,TMs,FT,subTypeTable,residues,states,alphaVec,PONDR,resAnnots){
+  print("Annotating...")
+  annotations<-DTannotate(input,subTypeTable,states,residues,alphaVec,resAnnots)
+  Wtable<-annotations
+  print("...done.")
+  for(i in 1:length(region)){
+    Wtable[num>=regS[i]&num<=regE[i],reg:=region[i]]
+    if(i%in%c(1,14)){Wtable[num>=regS[i]&num<=regE[i],class:="UTR"]}
+    if(i%in%c(2,3,4,5)){Wtable[num>=regS[i]&num<=regE[i],class:="Structural"]}
+    if(i%in%c(6,7,8,9,10,11,12,13)){Wtable[num>=regS[i]&num<=regE[i],class:="Nonstructural"]}
+    Wtable[num>=regS[i]&num<=regE[i],regPos:=((num+1)-regS[i])]
+  }
+  
+  Wtable[,res:=ceiling(regPos/3)]
+  Wtable[,reg:=factor(reg,levels=region)]
+  Wtable[,PONDR:=PONDR$PONDR[pos]]
+  Wtable[,binnedW:=round(wrel,1)]
+  Wtable[binnedW>=2,binnedW:=2.0]
+  
+  #Classify fitness classes
+  Wtable[,class:=factor(class,levels = c('Structural','Nonstructural','UTR'))]
+  Wtable[,status:=ifelse(Wtable$wrel.ciLower>1,"B","N")]
+  
+  Wtable[wrel.ciUpper<1,status:="D",]
+  Wtable[wrel.ciUpper<=0,status:="L",]
+  Wtable[,status:=factor(status,levels = c("N","D","L","B"))]
+  
+  Wtable[is.na(muttype),muttype:="UTR"]
+  Wtable[,muttype:=as.factor(muttype)]
+  Wtable[,status:=factor(status),]
+  Wtable<-cbind(Wtable,sspreds[pos,c(1,5:10)])
+  Wtable<-merge(Wtable,TANGO,by = c("pos","wtRes","mutRes"),all.x = T)
+  
+  for(f in 1:length(FT$Feature)){
+    Wtable[pos%in%(FT$Start[f]:FT$End[f]),feature:=FT$Feature[f]]
+    Wtable[pos%in%(FT$Start[f]:FT$End[f]),Annot:=FT$Annot[f]]
+  }
+  
+  for(d in 1:length(TMs$Feature)){
+    Wtable[pos%in%(TMs$Start[d]:TMs$End[d]),TMstat:=TMs$Annot[d]]
+  }
+  
+  # Cleaning reference differences, filter and fix DMFE.
+  WtableF<-Wtable[!(passage=="MF.8"&host=="Mosquito"&set=="B")&!ID%in%c("C1531T","A2406G"),] #reference differences
+  #WtableF<-WtableF[M>=8 | L>=7,] #filter for significance
+  WtableF[wrel<0,wrel:=0.0,]
+  
+  #Wtable[wrel>2.5,wrel:=2.5,]
+  WtableF[,weightW:=freq*wrel,]
+  return(WtableF)
+} 
+
+```
+##########
+Execution:
+```{r readInfile}
+wrel<-readData(infile)
+#Restructure table
+input=data.table(melt(wrel,variable.name = "passage",value.name = 'freq',measure.vars = 9:17,id.var=c(1:8,18:28)))
+
+```
+
+Define coding regions in DENV2.
+```{r Residue positions}
+#Residue positions
+pos<-ceiling(((input$num)-96)/3)
+pos[pos<1]<-NA
+pos[pos>3392]<-NA
+input$pos<-pos
+```
+
+```{r codingRegions}
+region<-c("UTR-5","C","pr","M","E", "NS1","NS2A","NS2B","NS3","NS4A","2K", "NS4B","NS5", "UTR3")
+regS<-  c(1,      97,  439,712,937 ,2422, 3478,  4132,  4522,  6376, 6757,  6826,  7570, 10270)
+regE<-  c(96,     438, 711,936,2421,3477, 4131,  4521,  6375,  6756, 6825,  7569, 10272, 10723)
+```
+
+PONDR disorder predictions (0, ordered; 1, disordered).
+NCBI feature tables.
+2ndary structure prediction from PSIPRED.
+```{r bioinfoTables}
+
+subTypeTable<-read.delim(file = "../Data_Tables/Pechmann2014_ResSubTable.txt" , head = T)
+rownames(subTypeTable)<-colnames(subTypeTable)
+dir.create("AnnotatedData")
+states=as.array(c('TTT', 'TTC', 'TTA', 'TTG',
+                  'TCT', 'TCC', 'TCA', 'TCG',
+                  'TAT', 'TAC', 'TAA', 'TAG',
+                  'TGT', 'TGC', 'TGA', 'TGG',
+                  'CTT', 'CTC', 'CTA', 'CTG',
+                  'CCT', 'CCC', 'CCA', 'CCG',
+                  'CAT', 'CAC', 'CAA', 'CAG',
+                  'CGT', 'CGC', 'CGA', 'CGG',
+                  'ATT', 'ATC', 'ATA', 'ATG',
+                  'ACT', 'ACC', 'ACA', 'ACG',
+                  'AAT', 'AAC', 'AAA', 'AAG',
+                  'AGT', 'AGC', 'AGA', 'AGG',
+                  'GTT', 'GTC', 'GTA', 'GTG',
+                  'GCT', 'GCC', 'GCA', 'GCG',
+                  'GAT', 'GAC', 'GAA', 'GAG',
+                  'GGT', 'GGC', 'GGA', 'GGG', NA))
+
+alphaVec<-c("A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y","X","U")
+
+residues = c( "F","F","L","L",
+              "S","S","S","S",
+              "Y","Y","X","X",
+              "C","C","X","W",
+              "L","L","L","L",
+              "P","P","P","P",
+              "H","H","Q","Q",
+              "R","R","R","R",
+              "I","I","I","M",
+              "T","T","T","T",
+              "N","N","K","K",
+              "S","S","R","R",
+              "V","V","V","V",
+              "A","A","A","A",
+              "D","D","E","E",
+              "G","G","G","G", "U")
+
+res3 = c( "PHE","PHE","LEU","LEU",
+          "SER","SER","SER","SER",
+          "TYR","TYR","XXX","XXX",
+          "CYS","CYS","XXX","TRP",
+          "LEU","LEU","LEU","LEU",
+          "PRO","PRO","PRO","PRO",
+          "HIS","HIS","GLN","GLN",
+          "ARG","ARG","ARG","ARG",
+          "ILE","ILE","ILE","MET",
+          "THR","THR","THR","THR",
+          "ASN","ASN","LYS","LYS",
+          "SER","SER","ARG","ARG",
+          "VAL","VAL","VAL","VAL",
+          "ALA","ALA","ALA","ALA",
+          "ASP","ASP","GLU","GLU",
+          "GLY","GLY","GLY","GLY", "UTR")
+
+resCharacter=c('acidic',
+               'acyclic',
+               'aliphatic',
+               'aromatic',
+               'basic',
+               'buried',
+               'charged',
+               'cyclic',
+               'hydrophobic',
+               'large',
+               'medium',
+               'negative',
+               'neutral',
+               'polar',
+               'positive',
+               'small',
+               'surface',
+               'stop')
+
+resList=c("A", "R", "N", "D", "C", "E", "Q", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V", "X")
+
+resAnnotMatrix=##Binary Vector -- could be mproved to be continuous data, see K. Chou's stuff.
+matrix(  
+  #A  R  N  D  C  E  Q  G  H  I  L  K  M  F  P  S  T  W  Y  V  * U
+  c(0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,# acidic
+  1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0,# acyclic
+  1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,# aliphatic
+  0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0,# aromatic
+  0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,# basic
+  1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0,# buried
+  0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,# charged
+  0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0,# cyclic
+  1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0,# hydrophobic
+  0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0,# large
+  0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0,# medium
+  0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,# negative
+  1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,# neutral
+  0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,# polar
+  0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,# positive
+  1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,# small
+  0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0,# surface
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),# stop
+  byrow=T,ncol=22,dimnames = list(resCharacter,c("A", "R", "N", "D", "C", "E", "Q", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V", "X","U")))
+
+rownames(subTypeTable)<-colnames(subTypeTable)
+
+FT<-read.delim("../Data_Tables/FeatureTable.txt",header=F,sep="\t")
+TMs<-read.delim(file="../Data_Tables/TMDomains.txt",header=F)
+
+colnames(FT)<-c("Feature","Start","End","Annot")
+colnames(TMs)<-c("Feature","Start","End","Annot")
+
+sspreds<-read.delim(file="../Data_Tables/SecStr.txt",header = T)
+
+TANGOpreds<-read.csv(file="../Data_Tables/Combined_TANGO_Mutagenesis.csv",header = T,sep = ',')
+TANGOnames<-data.frame(limma::strsplit2(TANGOpreds$name,"_"),stringsAsFactors = F)
+colnames(TANGOnames)<-c("Name","pos","wtRes","mutRes")
+TANGO<-data.frame(TANGOnames,TANGOpreds[,-c(1,7)])
+TANGO$pos<-as.numeric(TANGO$pos)+1
+TANGO<-TANGO[-1,]
+
+PONDR<-read.delim(head=F,"../Data_Tables/DenguePolyproteinPONDRFit.txt",sep = "\t",col.names = c('res',"wtRes","PONDR","Error"))
+
+```
+
+Generate annotated tables using all of the imported datasets. 
+```{r Generatetable}
+Wtable<-generateTable(input,pos,region,regS,regE,sspreds,TANGO,TMs,FT,subTypeTable,residues,states,alphaVec,PONDR, resAnnotMatrix)
+
+save(Wtable,file = "AnnotatedData/fitnesstable_All.Rdata")
+fwrite(Wtable,file = "AnnotatedData/fitnesstable_All.csv")
+
+```
+ 
